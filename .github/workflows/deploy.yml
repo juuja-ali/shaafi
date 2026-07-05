@@ -1,0 +1,71 @@
+name: Deploy to production
+
+# Manual gate: shaafi has a single environment with live production data and
+# no UAT buffer, so nothing reaches ArgoCD until someone explicitly runs this
+# workflow with the image tag to deploy and types "deploy" to confirm.
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (from the Build ERPNext image workflow summary)'
+        required: true
+        type: string
+      confirm:
+        description: 'Type "deploy" to confirm this goes to production'
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Verify confirmation
+        run: |
+          if [ "${{ inputs.confirm }}" != "deploy" ]; then
+            echo "Confirmation text did not match 'deploy' — aborting."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Verify image exists in GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -H "Authorization: Bearer ${GH_TOKEN}" \
+            "https://ghcr.io/v2/ayoubdahir/shaafi-custom/manifests/${{ inputs.image_tag }}" \
+            -H "Accept: application/vnd.oci.image.index.v1+json" > /dev/null \
+            || { echo "Image tag ${{ inputs.image_tag }} not found in ghcr.io/ayoubdahir/shaafi-custom"; exit 1; }
+
+      - name: Update production values.yaml
+        run: |
+          set -e
+          VALUES="erpnext-gitops/environments/erpnext/values.yaml"
+          pip install -q yq
+          yq -Yi ".image.repository = \"ghcr.io/ayoubdahir/shaafi-custom\" | .image.tag = \"${{ inputs.image_tag }}\"" "$VALUES"
+          echo "--- values.yaml image ---"
+          head -5 "$VALUES"
+
+      - name: Commit and push
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add erpnext-gitops/environments/erpnext/values.yaml
+          if git diff --cached --quiet; then
+            echo "No changes to commit — already at this tag"
+            exit 0
+          fi
+          git commit -m "deploy: shaafi-custom:${{ inputs.image_tag }} to production (by ${{ github.actor }})"
+          git push origin main
+
+      - name: Summary
+        run: |
+          echo "### Deployed to production" >> $GITHUB_STEP_SUMMARY
+          echo "Image: \`ghcr.io/ayoubdahir/shaafi-custom:${{ inputs.image_tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "ArgoCD will auto-sync this within its poll interval (or sync manually for immediate effect)." >> $GITHUB_STEP_SUMMARY
