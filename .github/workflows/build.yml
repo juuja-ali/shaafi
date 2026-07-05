@@ -8,7 +8,7 @@ on:
       - 'erpnext-build/apps.json'
       - '.github/workflows/build.yml'
   repository_dispatch:
-    types: [theme-updated, erpnext-rebuild, mma-design-updated, app-updated, prime-updated]
+    types: [app-updated, erpnext-rebuild]
   workflow_dispatch:
     inputs:
       force_build:
@@ -33,58 +33,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # CACHE_BUSTER: keyed to apps.json content hash.
-      # Only changes when apps themselves change (new app, version bump).
-      # Keeps the expensive bench-init + full asset build cached across
-      # routine prime/mma_design code pushes.
+      # CACHE_BUSTER: keyed to apps.json content hash. Only changes when
+      # apps.json itself changes (new app, version bump) — every build is a
+      # full rebuild otherwise, since there's no per-app fast-update zone.
       - name: Compute apps.json hash (stable cache key)
         id: apps_hash
         run: |
           HASH=$(sha256sum erpnext-build/apps.json | cut -c1-16)
           echo "hash=${HASH}" >> $GITHUB_OUTPUT
 
-      - name: Resolve app SHAs and image tag
+      - name: Resolve image tag
         id: build_args
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          EVENT="${{ github.event_name }}"
-          EVENT_TYPE="${{ github.event.action }}"
-          PAYLOAD_SHA="${{ github.event.client_payload.sha }}"
-
           echo "cache_buster=${{ steps.apps_hash.outputs.hash }}" >> $GITHUB_OUTPUT
-
-          fetch_sha() {
-            local repo="$1"
-            curl -sf \
-              -H "Accept: application/vnd.github.v3+json" \
-              -H "Authorization: token ${GH_PAT}" \
-              "https://api.github.com/repos/${repo}/commits/main" \
-              | jq -r '.sha // empty'
-          }
-
-          if [ "$EVENT" = "repository_dispatch" ] && [ -n "$PAYLOAD_SHA" ]; then
-            if [ "$EVENT_TYPE" = "mma-design-updated" ]; then
-              MMA_DESIGN_SHA="$PAYLOAD_SHA"
-              PRIME_SHA=$(fetch_sha "AyoubDahir/prime")
-              [ -z "$PRIME_SHA" ] && PRIME_SHA="main"
-              echo "tag=mma-${MMA_DESIGN_SHA:0:7}" >> $GITHUB_OUTPUT
-            else
-              PRIME_SHA="$PAYLOAD_SHA"
-              MMA_DESIGN_SHA=$(fetch_sha "AyoubDahir/mma_design")
-              [ -z "$MMA_DESIGN_SHA" ] && MMA_DESIGN_SHA="main"
-              echo "tag=prime-${PRIME_SHA:0:7}" >> $GITHUB_OUTPUT
-            fi
-          else
-            PRIME_SHA=$(fetch_sha "AyoubDahir/prime")
-            [ -z "$PRIME_SHA" ] && PRIME_SHA="main"
-            MMA_DESIGN_SHA=$(fetch_sha "AyoubDahir/mma_design")
-            [ -z "$MMA_DESIGN_SHA" ] && MMA_DESIGN_SHA="main"
-            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
-
-          echo "prime_sha=${PRIME_SHA}" >> $GITHUB_OUTPUT
-          echo "mma_design_sha=${MMA_DESIGN_SHA}" >> $GITHUB_OUTPUT
+          echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Log in to GitHub Container Registry
         env:
@@ -128,8 +90,6 @@ jobs:
           build-args: |
             APPS_JSON_BASE64=${{ steps.apps.outputs.apps_b64 }}
             CACHE_BUSTER=${{ steps.build_args.outputs.cache_buster }}
-            PRIME_SHA=${{ steps.build_args.outputs.prime_sha }}
-            MMA_DESIGN_SHA=${{ steps.build_args.outputs.mma_design_sha }}
           secrets: |
             github_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           push: true
