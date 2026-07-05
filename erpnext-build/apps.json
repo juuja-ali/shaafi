@@ -1,26 +1,38 @@
 [
   {
-    "url": "https://github.com/frappe/erpnext",
-    "branch": "version-14"
-  },
-  {
-    "url": "https://github.com/frappe/payments",
-    "branch": "version-14"
-  },
-  {
-    "url": "https://github.com/frappe/healthcare",
-    "branch": "version-14"
-  },
-  {
-    "url": "https://github.com/frappe/hrms",
-    "branch": "version-14"
-  },
-  {
-    "url": "https://github.com/AyoubDahir/mma_design",
+    "url": "https://github.com/juuja-ali/erpnext",
     "branch": "main"
   },
   {
-    "url": "https://github.com/AyoubDahir/prime",
+    "url": "https://github.com/juuja-ali/healthcare",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/hrms",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/chat",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/rasiin_hr",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/rasiin_design",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/his",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/shaafi_mobile_app",
+    "branch": "main"
+  },
+  {
+    "url": "https://github.com/juuja-ali/dfp_external_storage",
     "branch": "main"
   }
 ]

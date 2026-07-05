@@ -49,13 +49,13 @@ RUN if [ -n "${APPS_JSON_BASE64}" ]; then \
   mkdir -p /opt/frappe && echo "${APPS_JSON_BASE64}" | base64 -d > /opt/frappe/apps.json; \
   fi
 
-ARG FRAPPE_BRANCH=version-14
-ARG FRAPPE_PATH=https://github.com/frappe/frappe
+ARG FRAPPE_BRANCH=main
+ARG FRAPPE_PATH=https://github.com/juuja-ali/frappe
 
-# CACHE_BUSTER is now keyed to the SHA-256 hash of apps.json (computed by CI).
-# It only changes when apps.json changes (new apps, version bumps) — NOT on every
-# prime push. This keeps the expensive bench init + pip + full asset build cached
-# across routine code pushes to prime.
+# CACHE_BUSTER is keyed to the SHA-256 hash of apps.json (computed by CI).
+# It only changes when apps.json itself changes (new apps, version bumps),
+# keeping the expensive bench init + full asset build cached across routine
+# app-code pushes that just trigger a fresh full rebuild instead.
 ARG CACHE_BUSTER=stable
 
 ENV BENCH_DISABLE_UV=1
@@ -133,9 +133,10 @@ RUN jinja_py="/home/frappe/frappe-bench/apps/frappe/frappe/utils/jinja.py" \
   echo "jinja.py already patched or pattern not found — skipping"; \
   fi
 
-# Initial full asset build — CACHED alongside bench init.
-# Builds frappe, erpnext, healthcare, hrms, mma_design, and the bench-init
-# snapshot of prime. Result is stored in sites/assets and .built-assets.
+# Full asset build for every app in the bench. No per-app fast-update zone —
+# this project doesn't have a separate CI dispatch mechanism for individual
+# custom apps, so every build just does the full thing and snapshots the
+# result into .built-assets for the runtime init containers to reuse.
 RUN <<'EOF'
 set -e
 cd /home/frappe/frappe-bench
@@ -148,93 +149,7 @@ for node_bin in /home/frappe/.nvm/versions/node/*/bin; do
 done
 export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=4096"
 
-bench build --production || echo "WARN: initial bench build failed; prime-rebuild step will retry"
-
-[ -s sites/assets/assets.json ] || echo "{}" > sites/assets/assets.json
-echo "Initial asset build complete ($(du -sh sites/assets | cut -f1))"
-EOF
-
-# ── FAST-UPDATE ZONE ─────────────────────────────────────────────────────────
-# Everything above is cached. Only the layers below re-run on each app push.
-# PRIME_SHA and MMA_DESIGN_SHA are the exact commit SHAs dispatched from each repo.
-# Changing either invalidates only from that ARG onwards (~2-4 min).
-ARG PRIME_SHA=head
-
-# Download the exact prime commit via GitHub API tarball (handles auth redirects for private repos).
-# The API endpoint redirects to a pre-signed CDN URL — no header stripping on redirect.
-RUN --mount=type=secret,id=github_token,required=false,mode=0444 \
-  set -e && \
-  BENCH="/home/frappe/frappe-bench" && \
-  echo "Fast-updating prime → ${PRIME_SHA}" && \
-  mkdir -p /tmp/prime-extract && \
-  GITHUB_TOKEN="" && \
-  if [ -f /run/secrets/github_token ] && [ -s /run/secrets/github_token ]; then \
-    GITHUB_TOKEN=$(cat /run/secrets/github_token); \
-  fi && \
-  if [ -n "$GITHUB_TOKEN" ]; then \
-    curl -fsSL \
-      -H "Authorization: token ${GITHUB_TOKEN}" \
-      -H "Accept: application/vnd.github.v3+json" \
-      "https://api.github.com/repos/AyoubDahir/prime/tarball/${PRIME_SHA}" \
-      -o /tmp/prime.tar.gz; \
-  else \
-    curl -fsSL \
-      "https://github.com/AyoubDahir/prime/archive/${PRIME_SHA}.tar.gz" \
-      -o /tmp/prime.tar.gz; \
-  fi && \
-  tar xz -C /tmp/prime-extract -f /tmp/prime.tar.gz && \
-  EXTRACTED=$(ls /tmp/prime-extract/ | head -1) && \
-  rsync -a --delete "/tmp/prime-extract/${EXTRACTED}/" "${BENCH}/apps/prime/" && \
-  rm -rf /tmp/prime-extract /tmp/prime.tar.gz && \
-  "${BENCH}/env/bin/pip" install -e "${BENCH}/apps/prime" --quiet && \
-  echo "Prime updated: $(ls ${BENCH}/apps/prime/)"
-
-ARG MMA_DESIGN_SHA=head
-
-# Download the exact mma_design commit via GitHub API tarball.
-RUN --mount=type=secret,id=github_token,required=false,mode=0444 \
-  set -e && \
-  BENCH="/home/frappe/frappe-bench" && \
-  echo "Fast-updating mma_design → ${MMA_DESIGN_SHA}" && \
-  mkdir -p /tmp/mma-extract && \
-  GITHUB_TOKEN="" && \
-  if [ -f /run/secrets/github_token ] && [ -s /run/secrets/github_token ]; then \
-    GITHUB_TOKEN=$(cat /run/secrets/github_token); \
-  fi && \
-  if [ -n "$GITHUB_TOKEN" ]; then \
-    curl -fsSL \
-      -H "Authorization: token ${GITHUB_TOKEN}" \
-      -H "Accept: application/vnd.github.v3+json" \
-      "https://api.github.com/repos/AyoubDahir/mma_design/tarball/${MMA_DESIGN_SHA}" \
-      -o /tmp/mma.tar.gz; \
-  else \
-    curl -fsSL \
-      "https://github.com/AyoubDahir/mma_design/archive/${MMA_DESIGN_SHA}.tar.gz" \
-      -o /tmp/mma.tar.gz; \
-  fi && \
-  tar xz -C /tmp/mma-extract -f /tmp/mma.tar.gz && \
-  EXTRACTED=$(ls /tmp/mma-extract/ | head -1) && \
-  rsync -a --delete "/tmp/mma-extract/${EXTRACTED}/" "${BENCH}/apps/mma_design/" && \
-  rm -rf /tmp/mma-extract /tmp/mma.tar.gz && \
-  "${BENCH}/env/bin/pip" install -e "${BENCH}/apps/mma_design" --quiet && \
-  echo "mma_design updated: $(ls ${BENCH}/apps/mma_design/)"
-
-# Rebuild prime and mma_design frontend assets, merge with cached full build.
-RUN <<'EOF'
-set -e
-cd /home/frappe/frappe-bench
-
-export NVM_DIR=/home/frappe/.nvm
-for node_bin in /home/frappe/.nvm/versions/node/*/bin; do
-  [ -d "$node_bin" ] && export PATH="$node_bin:$PATH"
-done
-export NODE_OPTIONS="${NODE_OPTIONS:-} --max-old-space-size=4096"
-
-echo "Rebuilding prime and mma_design assets..."
-bench build --app prime --app mma_design --production 2>&1 || {
-  echo "WARN: bench build --app prime/mma_design failed, falling back to full build"
-  bench build --production || echo "WARN: full fallback build also failed"
-}
+bench build --production || echo "WARN: initial bench build failed"
 
 [ -s sites/assets/assets.json ] || echo "{}" > sites/assets/assets.json
 
@@ -242,7 +157,7 @@ mkdir -p .built-assets
 rm -rf .built-assets/*
 cp -rL sites/assets/. .built-assets/
 [ -s .built-assets/assets.json ] || echo "{}" > .built-assets/assets.json
-echo "Prime assets rebuilt and backed up ($(du -sh .built-assets | cut -f1))"
+echo "Asset build complete ($(du -sh .built-assets | cut -f1))"
 EOF
 
 FROM base AS backend
