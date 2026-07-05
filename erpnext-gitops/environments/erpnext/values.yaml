@@ -1,7 +1,7 @@
 forceRedeploy: "1"
 image:
   repository: ghcr.io/ayoubdahir/shaafi-custom
-  tag: latest
+  tag: 0a5bade85d48f862c96f8d2ba9c773f828a3da05
   pullPolicy: Always
 imagePullSecrets: []
 serviceAccount:
