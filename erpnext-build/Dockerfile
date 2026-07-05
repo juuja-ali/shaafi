@@ -107,6 +107,22 @@ RUN set -e \
   && /home/frappe/frappe-bench/env/bin/pip uninstall -y frappe || true \
   && /home/frappe/frappe-bench/env/bin/pip install -e /home/frappe/frappe-bench/apps/frappe
 
+# Fix: bench init sometimes clones an app into apps/<name> without pip-installing
+# it into the venv (seen with the "chat" app), which surfaces as a hard-to-debug
+# ModuleNotFoundError at runtime rather than a build failure. Sweep every cloned
+# app and install any that are missing from the venv.
+RUN cd /home/frappe/frappe-bench && \
+  for app_dir in apps/*/; do \
+  app=$(basename "$app_dir"); \
+  [ "$app" = "frappe" ] && continue; \
+  if [ -f "${app_dir}setup.py" ] || [ -f "${app_dir}pyproject.toml" ]; then \
+  if ! env/bin/pip show "$app" > /dev/null 2>&1; then \
+  echo "Installing missed app: $app"; \
+  env/bin/pip install -e "$app_dir" --quiet || echo "WARN: pip install failed for $app"; \
+  fi; \
+  fi; \
+  done
+
 # Patch Frappe jinja.py: some apps may register "jinja" hook as list; Frappe expects dict
 RUN jinja_py="/home/frappe/frappe-bench/apps/frappe/frappe/utils/jinja.py" \
   && if grep -q 'values = frappe.get_hooks("jinja")' "$jinja_py" \
