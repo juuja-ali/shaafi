@@ -74,7 +74,6 @@ jobs:
       - hrms
       - mma_design
       - prime
-      - chat
     defaultTheme: ""
     backoffLimit: 2
     ttlSecondsAfterFinished: 300
