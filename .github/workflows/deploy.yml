@@ -35,11 +35,11 @@ jobs:
 
       - name: Verify image exists in GHCR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GHCR_USERNAME: ${{ github.repository_owner }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -sf -H "Authorization: Bearer ${GH_TOKEN}" \
-            "https://ghcr.io/v2/ayoubdahir/shaafi-custom/manifests/${{ inputs.image_tag }}" \
-            -H "Accept: application/vnd.oci.image.index.v1+json" > /dev/null \
+          echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
+          docker manifest inspect "ghcr.io/ayoubdahir/shaafi-custom:${{ inputs.image_tag }}" > /dev/null \
             || { echo "Image tag ${{ inputs.image_tag }} not found in ghcr.io/ayoubdahir/shaafi-custom"; exit 1; }
 
       - name: Update production values.yaml
