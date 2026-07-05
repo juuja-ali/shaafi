@@ -118,7 +118,7 @@ RUN cd /home/frappe/frappe-bench && \
   if [ -f "${app_dir}setup.py" ] || [ -f "${app_dir}pyproject.toml" ]; then \
   if ! env/bin/pip show "$app" > /dev/null 2>&1; then \
   echo "Installing missed app: $app"; \
-  env/bin/pip install -e "$app_dir" --quiet || echo "WARN: pip install failed for $app"; \
+  env/bin/pip install -e "$app_dir" --no-build-isolation --quiet || echo "WARN: pip install failed for $app"; \
   fi; \
   fi; \
   done
