@@ -1,0 +1,37 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-storage-dirs
+  namespace: erpnext
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        kubernetes.io/hostname: ip-11-0-37-213
+      containers:
+        - name: init-dirs
+          image: busybox:1.36
+          securityContext:
+            runAsUser: 0
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              echo "Ensuring storage directories exist on /opt/shaafi..."
+              mkdir -p /opt-shaafi/sites /opt-shaafi/logs /opt-shaafi/backups
+              chown -R 1000:1000 /opt-shaafi
+              ls -la /opt-shaafi
+              echo "Storage directories ready."
+          volumeMounts:
+            - name: shaafi-storage
+              mountPath: /opt-shaafi
+      volumes:
+        - name: shaafi-storage
+          hostPath:
+            path: /opt/shaafi
+            type: Directory

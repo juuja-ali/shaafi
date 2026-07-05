@@ -1,0 +1,347 @@
+forceRedeploy: "1"
+image:
+  repository: ghcr.io/ayoubdahir/shaafi-custom
+  tag: latest
+  pullPolicy: Always
+imagePullSecrets: []
+serviceAccount:
+  create: true
+  name: ""
+podSecurityContext: {}
+securityContext: {}
+persistence:
+  worker:
+    enabled: true
+    existingClaim: "erpnext-pvc"
+  logs:
+    enabled: true
+    existingClaim: "erpnext-logs-pvc"
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: "shaafi.11-0-37-213.sslip.io"
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+# dbHost: read by the chart's job templates when mariadb.enabled is false.
+# Points at the existing live MariaDB on the database server — no migration, reused in place.
+dbHost: "11.0.37.213"
+jobs:
+  migrate:
+    enabled: true
+    backoffLimit: 1
+    siteName: "shaafi"
+    skipFailing: false
+    resources: {}
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  volumePermissions:
+    enabled: false
+    backoffLimit: 0
+  configure:
+    enabled: true
+    backoffLimit: 2
+    fixVolume: false
+    resources: {}
+    companySetup:
+      enabled: false
+  createSite:
+    enabled: false
+    backoffLimit: 5
+    siteName: shaafi
+    dbType: mariadb
+    adminPassword: changeit
+    forceCreate: false
+    installApps:
+      - erpnext
+    defaultTheme: ""
+    resources: {}
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  installApp:
+    enabled: false
+    siteName: "shaafi"
+    apps:
+      - healthcare
+      - hrms
+      - mma_design
+      - prime
+      - chat
+    defaultTheme: ""
+    backoffLimit: 2
+    ttlSecondsAfterFinished: 300
+    resources: {}
+    nodeSelector: {}
+    affinity: {}
+    tolerations: []
+  setupWebsite:
+    enabled: false
+    siteName: "shaafi"
+    backoffLimit: 2
+    resources: {}
+    nodeSelector: {}
+    tolerations: []
+  grantSiteDbUser:
+    enabled: false
+    backoffLimit: 5
+    resources: {}
+  dropSite:
+    enabled: false
+    backoffLimit: 0
+    siteName: ""
+    forced: false
+  backup:
+    enabled: false
+    backoffLimit: 0
+    siteName: ""
+    withFiles: true
+  scheduledBackup:
+    enabled: true
+    schedule: "0 */6 * * *"
+    siteName: "shaafi"
+    withFiles: true
+    retentionDays: 14
+    backupVolume:
+      existingClaim: "erpnext-backup-pvc"
+    nodeSelector: {}
+    tolerations: []
+  custom:
+    enabled: false
+nginx:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+  configFile: "nginx-frappe.conf"
+  service:
+    type: ClusterIP
+    port: 8080
+  environment:
+    upstreamRealIPAddress: "127.0.0.1"
+    upstreamRealIPRecursive: "off"
+    upstreamRealIPHeader: "X-Forwarded-For"
+    frappeSiteNameHeader: "shaafi"
+  podSecurityContext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 0
+  containerSecurityContext:
+    runAsUser: 0
+    runAsGroup: 0
+  livenessProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 100m
+      memory: 192Mi
+    limits:
+      cpu: 400m
+      memory: 384Mi
+  nodeSelector:
+    kubernetes.io/hostname: ip-11-0-37-213
+  tolerations: []
+  affinity: {}
+socketio:
+  replicaCount: 1
+  autoscaling:
+    enabled: false
+  service:
+    type: ClusterIP
+    port: 9000
+  livenessProbe:
+    tcpSocket:
+      port: 9000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  readinessProbe:
+    tcpSocket:
+      port: 9000
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  resources:
+    requests:
+      cpu: 75m
+      memory: 128Mi
+    limits:
+      cpu: 300m
+      memory: 320Mi
+  nodeSelector:
+    kubernetes.io/hostname: ip-11-0-37-213
+  tolerations: []
+  affinity: {}
+worker:
+  gunicorn:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
+    increaseFileLimit: true
+    args:
+      - /home/frappe/frappe-bench/env/bin/gunicorn
+      - --bind=0.0.0.0:8000
+      - --timeout=120
+      - --workers=2
+      - --preload
+      - frappe.app:application
+    livenessProbe:
+      tcpSocket:
+        port: 8000
+    readinessProbe:
+      tcpSocket:
+        port: 8000
+    service:
+      type: ClusterIP
+      port: 8000
+    resources:
+      requests:
+        cpu: 200m
+        memory: 384Mi
+      limits:
+        cpu: 800m
+        memory: 1024Mi
+    nodeSelector:
+      kubernetes.io/hostname: ip-11-0-37-213
+    tolerations: []
+    affinity: {}
+  default:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
+    livenessProbe:
+      override: false
+      probe: {}
+    readinessProbe:
+      override: false
+      probe: {}
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 768Mi
+    nodeSelector:
+      kubernetes.io/hostname: ip-11-0-37-213
+    tolerations: []
+    affinity: {}
+  short:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
+    livenessProbe:
+      override: false
+      probe: {}
+    readinessProbe:
+      override: false
+      probe: {}
+    resources:
+      requests:
+        cpu: 75m
+        memory: 192Mi
+      limits:
+        cpu: 400m
+        memory: 512Mi
+    nodeSelector:
+      kubernetes.io/hostname: ip-11-0-37-213
+    tolerations: []
+    affinity: {}
+  long:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
+    livenessProbe:
+      override: false
+      probe: {}
+    readinessProbe:
+      override: false
+      probe: {}
+    resources:
+      requests:
+        cpu: 75m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 896Mi
+    nodeSelector:
+      kubernetes.io/hostname: ip-11-0-37-213
+    tolerations: []
+    affinity: {}
+  scheduler:
+    replicaCount: 1
+    livenessProbe:
+      override: false
+      probe: {}
+    readinessProbe:
+      override: false
+      probe: {}
+    resources:
+      requests:
+        cpu: 50m
+        memory: 160Mi
+      limits:
+        cpu: 250m
+        memory: 384Mi
+  healthProbe: |
+    exec:
+      command:
+        - bash
+        - -c
+        - echo "Ping backing services";
+    initialDelaySeconds: 15
+    periodSeconds: 5
+keda:
+  enabled: false
+redis-cache:
+  enabled: true
+  auth:
+    enabled: false
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis
+    tag: 7.0.7-debian-11-r0
+  master:
+    containerPorts:
+      redis: 6379
+redis-queue:
+  enabled: true
+  auth:
+    enabled: false
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis
+    tag: 7.0.7-debian-11-r0
+  master:
+    containerPorts:
+      redis: 6379
+redis-socketio:
+  enabled: true
+  auth:
+    enabled: false
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis
+    tag: 7.0.7-debian-11-r0
+  master:
+    containerPorts:
+      redis: 6379
+postgresql:
+  enabled: false
+mariadb:
+  enabled: false
+  primary:
+    service:
+      ports:
+        mysql: 3306

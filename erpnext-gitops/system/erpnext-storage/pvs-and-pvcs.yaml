@@ -1,0 +1,110 @@
+# ============================================================
+# Single-disk layout on server B (ip-11-0-37-213): no dual-NVMe
+# split like the alihsans reference — all ERPNext storage lives
+# under /opt/shaafi on the same node, pinned via nodeAffinity so
+# it always co-locates with the pods (see values.yaml nodeSelector).
+# ============================================================
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: erpnext-sites-pv
+spec:
+  capacity:
+    storage: 50Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  local:
+    path: /opt/shaafi/sites
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ip-11-0-37-213
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: erpnext-pvc
+  namespace: erpnext
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: erpnext-logs-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  local:
+    path: /opt/shaafi/logs
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ip-11-0-37-213
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: erpnext-logs-pvc
+  namespace: erpnext
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: erpnext-backup-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  local:
+    path: /opt/shaafi/backups
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ip-11-0-37-213
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: erpnext-backup-pvc
+  namespace: erpnext
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 20Gi
