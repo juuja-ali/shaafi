@@ -115,7 +115,7 @@ jobs:
   custom:
     enabled: false
 nginx:
-  replicaCount: 1
+  replicaCount: 2
   autoscaling:
     enabled: false
   configFile: "nginx-frappe.conf"
@@ -156,7 +156,7 @@ nginx:
   tolerations: []
   affinity: {}
 socketio:
-  replicaCount: 1
+  replicaCount: 2
   autoscaling:
     enabled: false
   service:
@@ -185,7 +185,7 @@ socketio:
   affinity: {}
 worker:
   gunicorn:
-    replicaCount: 1
+    replicaCount: 2
     autoscaling:
       enabled: false
     increaseFileLimit: true
@@ -217,7 +217,7 @@ worker:
     tolerations: []
     affinity: {}
   default:
-    replicaCount: 1
+    replicaCount: 2
     autoscaling:
       enabled: false
     livenessProbe:
@@ -238,7 +238,7 @@ worker:
     tolerations: []
     affinity: {}
   short:
-    replicaCount: 1
+    replicaCount: 2
     autoscaling:
       enabled: false
     livenessProbe:
@@ -259,7 +259,7 @@ worker:
     tolerations: []
     affinity: {}
   long:
-    replicaCount: 1
+    replicaCount: 2
     autoscaling:
       enabled: false
     livenessProbe:

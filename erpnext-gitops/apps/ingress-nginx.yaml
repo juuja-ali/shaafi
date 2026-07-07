@@ -12,12 +12,9 @@ spec:
     helm:
       values: |
         controller:
-          kind: Deployment
-          replicaCount: 1
+          kind: DaemonSet
           hostNetwork: true
           dnsPolicy: ClusterFirstWithHostNet
-          nodeSelector:
-            kubernetes.io/hostname: ip-11-0-37-213
           tolerations: []
           service:
             enabled: false
