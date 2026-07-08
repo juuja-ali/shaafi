@@ -49,7 +49,7 @@ spec:
               # turns into a race where one pod's writes clobber another's
               # mid-copy. Only fall back to the full rebuild below if the
               # PreSync hook didn't run or its output isn't usable.
-              if [ -s "$ASSETS_DIR/assets.json" ] && /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('$ASSETS_DIR/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css','hrms.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)" 2>/dev/null; then
+              if [ -s "$ASSETS_DIR/assets.json" ] && /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('$ASSETS_DIR/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)" 2>/dev/null; then
                 echo "assets.json already valid (populated by conf-bench PreSync hook) — skipping rebuild"
                 exit 0
               fi
@@ -110,7 +110,7 @@ spec:
               find "$ASSETS_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
               cp -rf "$TMP_ASSETS"/. "$ASSETS_DIR"/ || true
 
-              if [ ! -s "$ASSETS_DIR/assets.json" ] || ! /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('$ASSETS_DIR/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css','hrms.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)" 2>/dev/null; then
+              if [ ! -s "$ASSETS_DIR/assets.json" ] || ! /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('$ASSETS_DIR/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)" 2>/dev/null; then
                 echo "assets.json missing/empty; trying runtime build fallback"
                 # Ensure bench build writes into the PVC-backed assets path.
                 rm -rf /home/frappe/frappe-bench/assets
@@ -225,7 +225,7 @@ spec:
                       print("WARN: Could not synthesize assets.json from sites/assets")
               PY
 
-              if [ ! -s "$ASSETS_DIR/assets.json" ] || ! /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('$ASSETS_DIR/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css','hrms.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)"; then
+              if [ ! -s "$ASSETS_DIR/assets.json" ] || ! /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('$ASSETS_DIR/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)"; then
                 echo "ERROR: assets.json is missing/empty after recovery; refusing to start with broken assets"
                 exit 1
               fi

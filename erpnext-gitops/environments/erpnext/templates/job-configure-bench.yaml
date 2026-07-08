@@ -274,7 +274,7 @@ spec:
               find sites/assets -mindepth 1 -maxdepth 1 -exec rm -rf {} +
               cp -rf "$TMP_ASSETS"/. sites/assets/ || true
 
-              if [ ! -s sites/assets/assets.json ] || ! /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('sites/assets/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css','hrms.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)" 2>/dev/null; then
+              if [ ! -s sites/assets/assets.json ] || ! /home/frappe/frappe-bench/env/bin/python3 -c "import json,os,sys; d=json.load(open('sites/assets/assets.json')); req=('app.bundle.js','app.bundle.css','libs.bundle.js','desk.bundle.js','list.bundle.js','form.bundle.js','controls.bundle.js','report.bundle.js','erpnext.bundle.css'); ok=isinstance(d,dict) and all(k in d for k in req) and all(isinstance(v,str) and v.startswith('/assets/') and os.path.exists('/home/frappe/frappe-bench/sites/'+v.lstrip('/')) for v in d.values()); sys.exit(0 if ok else 1)" 2>/dev/null; then
                 echo "assets.json missing/empty; trying runtime build fallback..."
                 # Ensure bench build writes into the PVC-backed assets path.
                 rm -rf assets
