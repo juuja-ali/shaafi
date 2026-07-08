@@ -230,6 +230,12 @@ spec:
                 if [ -s "$BUILT/assets.json" ] && ! grep -Eq '^[[:space:]]*\{[[:space:]]*\}[[:space:]]*$' "$BUILT/assets.json"; then
                   echo "Repopulating assets from image (sites/assets wiped first)"
                   cp -rf "$BUILT"/. sites/assets/ || true
+                  # node_modules is a build-time dependency, never served to
+                  # browsers (no assets.json entry ever points into it) -- and
+                  # transitive npm deps that symlink back into their own nested
+                  # node_modules make it uncopyable cleanly with cp -r. Strip it
+                  # rather than fight the collision.
+                  find sites/assets -maxdepth 2 -type d -name node_modules -exec rm -rf {} + 2>/dev/null || true
                 else
                   echo "WARN: .built-assets/assets.json missing/empty; skipping destructive image asset copy"
                 fi
@@ -307,6 +313,11 @@ spec:
                   cp -f "$BUILT/assets.json" sites/assets/assets.json
                 fi
               fi
+
+              # Final safety net: strip any node_modules that landed back in
+              # sites/assets from a later copy pass, before synthesizing
+              # assets.json from whatever's actually on disk.
+              find sites/assets -maxdepth 2 -type d -name node_modules -exec rm -rf {} + 2>/dev/null || true
 
               /home/frappe/frappe-bench/env/bin/python3 - <<'PY'
               import json
