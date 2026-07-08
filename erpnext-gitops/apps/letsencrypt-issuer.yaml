@@ -9,7 +9,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/AyoubDahir/shaafi.git
+    repoURL: https://github.com/juuja-ali/shaafi.git
     targetRevision: HEAD
     path: erpnext-gitops/system/cert-manager/manifests
   destination:
