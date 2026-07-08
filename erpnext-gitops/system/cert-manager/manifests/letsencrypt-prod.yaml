@@ -1,6 +1,10 @@
-# Inert until a real domain is pointed at the cluster — the letsencrypt-issuer
-# Application (apps/letsencrypt-issuer.yaml) has no automated syncPolicy on
-# purpose, so this ClusterIssuer only gets created when manually synced.
+# Real domain (shaafisystem.com) is now live via Cloudflare, proxied — so
+# HTTP-01 (which needs direct port-80 reachability to the origin) is unreliable
+# through the proxy. Using DNS-01 against Cloudflare instead: cert-manager
+# creates a TXT record via the Cloudflare API, no port-80 dependency at all.
+# The API token this references (cloudflare-api-token-secret, cert-manager ns)
+# is applied directly to the cluster, not committed here — see gitops-only-fixes
+# memory for why credentials are the one deliberate exception to "everything in git".
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
@@ -12,6 +16,11 @@ spec:
     privateKeySecretRef:
       name: letsencrypt-prod-key
     solvers:
-      - http01:
-          ingress:
-            class: nginx
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-api-token-secret
+              key: api-token
+        selector:
+          dnsZones:
+            - "shaafisystem.com"

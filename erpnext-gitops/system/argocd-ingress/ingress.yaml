@@ -1,6 +1,8 @@
-# No domain yet — using sslip.io (resolves <anything>.<ip-with-dashes>.sslip.io
-# to that IP) so ArgoCD's UI is reachable without any DNS setup. Swap for a
-# real hostname + cert-manager annotation once a domain is pointed at the cluster.
+# Real domain (shaafisystem.com) live as of 2026-07-08, proxied through
+# Cloudflare. TLS cert is issued by cert-manager via the letsencrypt-prod
+# ClusterIssuer (DNS-01/Cloudflare). ssl-redirect stays "false" until
+# Cloudflare's SSL/TLS mode is confirmed as Full/Full-strict on their side —
+# see the domain-cutover notes for why.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -8,10 +10,15 @@ metadata:
   namespace: argocd
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - "argocd.shaafisystem.com"
+      secretName: argocd-tls
   rules:
-    - host: "argocd.11-0-37-213.sslip.io"
+    - host: "argocd.shaafisystem.com"
       http:
         paths:
           - path: /

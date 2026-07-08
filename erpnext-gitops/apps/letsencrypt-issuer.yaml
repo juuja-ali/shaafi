@@ -1,6 +1,4 @@
-# No domain yet — this Application is intentionally NOT auto-synced.
-# Once a real DNS name points at the cluster, sync manually (or add
-# spec.syncPolicy.automated) to create the ClusterIssuer.
+# Real domain (shaafisystem.com) is live as of 2026-07-08 — auto-sync enabled.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -16,5 +14,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: cert-manager
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true

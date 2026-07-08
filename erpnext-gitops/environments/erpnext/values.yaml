@@ -23,12 +23,16 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "50m"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: "shaafi.11-0-37-213.sslip.io"
+    - host: "cloud.shaafisystem.com"
       paths:
         - path: /
           pathType: ImplementationSpecific
-  tls: []
+  tls:
+    - hosts:
+        - "cloud.shaafisystem.com"
+      secretName: erpnext-tls
 # dbHost: read by the chart's job templates when mariadb.enabled is false.
 # Points at the existing live MariaDB on the database server — no migration, reused in place.
 dbHost: "11.0.37.213"
