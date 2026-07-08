@@ -244,7 +244,7 @@ spec:
                 if [ -d "$SRC" ]; then
                   rm -rf "$DST"
                   mkdir -p "$DST"
-                  cp -rf "$SRC"/. "$DST"/ || true
+                  cp -rLf "$SRC"/. "$DST"/ || true
                 fi
               done
               # bench build may recreate top-level app symlinks under sites/assets.
@@ -290,7 +290,7 @@ spec:
                 if [ -d "$SRC" ]; then
                   rm -rf "$DST"
                   mkdir -p "$DST"
-                  cp -rf "$SRC"/. "$DST"/ || true
+                  cp -rLf "$SRC"/. "$DST"/ || true
                 fi
               done
               # Build runs in job container FS; materialize symlinked outputs into PVC-backed files.

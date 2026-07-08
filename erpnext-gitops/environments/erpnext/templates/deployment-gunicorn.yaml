@@ -83,7 +83,7 @@ spec:
                 if [ -d "$SRC" ]; then
                   rm -rf "$DST"
                   mkdir -p "$DST"
-                  cp -rf "$SRC"/. "$DST"/ || true
+                  cp -rLf "$SRC"/. "$DST"/ || true
                 fi
               done
               # Build runs in init container FS; materialize symlinked outputs into PVC-backed files.
@@ -138,7 +138,7 @@ spec:
                 if [ -d "$SRC" ]; then
                   rm -rf "$DST"
                   mkdir -p "$DST"
-                  cp -rf "$SRC"/. "$DST"/ || true
+                  cp -rLf "$SRC"/. "$DST"/ || true
                 fi
               done
 
