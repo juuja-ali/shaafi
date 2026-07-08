@@ -155,8 +155,7 @@ nginx:
     limits:
       cpu: 400m
       memory: 384Mi
-  nodeSelector:
-    kubernetes.io/hostname: ip-11-0-37-213
+  nodeSelector: {}
   tolerations: []
   affinity: {}
 socketio:
@@ -183,8 +182,7 @@ socketio:
     limits:
       cpu: 300m
       memory: 320Mi
-  nodeSelector:
-    kubernetes.io/hostname: ip-11-0-37-213
+  nodeSelector: {}
   tolerations: []
   affinity: {}
 worker:
@@ -216,8 +214,7 @@ worker:
       limits:
         cpu: 800m
         memory: 1024Mi
-    nodeSelector:
-      kubernetes.io/hostname: ip-11-0-37-213
+    nodeSelector: {}
     tolerations: []
     affinity: {}
   default:
@@ -237,8 +234,7 @@ worker:
       limits:
         cpu: 500m
         memory: 768Mi
-    nodeSelector:
-      kubernetes.io/hostname: ip-11-0-37-213
+    nodeSelector: {}
     tolerations: []
     affinity: {}
   short:
@@ -258,8 +254,7 @@ worker:
       limits:
         cpu: 400m
         memory: 512Mi
-    nodeSelector:
-      kubernetes.io/hostname: ip-11-0-37-213
+    nodeSelector: {}
     tolerations: []
     affinity: {}
   long:
@@ -279,8 +274,7 @@ worker:
       limits:
         cpu: 500m
         memory: 896Mi
-    nodeSelector:
-      kubernetes.io/hostname: ip-11-0-37-213
+    nodeSelector: {}
     tolerations: []
     affinity: {}
   scheduler:

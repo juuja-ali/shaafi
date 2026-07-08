@@ -211,12 +211,24 @@ spec:
               echo "Setting up assets..."
               echo "========================================"
 
+              # Wipe sites/assets before repopulating, rather than merging onto
+              # whatever's already on the shared PVC. Different image builds have
+              # inconsistently represented paths like node_modules (sometimes a
+              # real directory, sometimes a broken symlink/placeholder from the
+              # .built-assets snapshot), so a merge can hit an unresolvable
+              # file-vs-directory conflict that even `rm -rf` can't clean up
+              # (cp: cannot overwrite directory ... with non-directory / rm:
+              # Directory not empty), killing this job outright. A full repopulate
+              # every run is the only way to guarantee the PVC always matches
+              # exactly what this image shipped, with nothing stale left to
+              # collide with.
+              rm -rf sites/assets 2>/dev/null || true
               mkdir -p sites/assets
               BUILT=/home/frappe/frappe-bench/.built-assets
 
               if [ -d "$BUILT" ]; then
                 if [ -s "$BUILT/assets.json" ] && ! grep -Eq '^[[:space:]]*\{[[:space:]]*\}[[:space:]]*$' "$BUILT/assets.json"; then
-                  echo "Merging built assets from image (non-destructive)"
+                  echo "Repopulating assets from image (sites/assets wiped first)"
                   cp -rf "$BUILT"/. sites/assets/ || true
                 else
                   echo "WARN: .built-assets/assets.json missing/empty; skipping destructive image asset copy"
